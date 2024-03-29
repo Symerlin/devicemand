@@ -6,7 +6,13 @@ use crate::devices;
 
 #[test]
 fn TestScanUSBDevices() {
-    for device in devices::ScanUSBDevices().unwrap() {
-        println!("{}:{} {}", device.GetVendorId().unwrap(), device.GetProductId().unwrap(), device.GetProductName().unwrap());
+    for device in devices::ScanUsbDevice().unwrap() {
+        println!(
+            "{} {}:{} {}",
+            device.DevicePath,
+            device.GetVendorId().unwrap(),
+            device.GetProductId().unwrap(),
+            device.GetProductName().unwrap(),
+        );
     }
 }
