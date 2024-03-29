@@ -1,0 +1,2 @@
+# devicemand
+Device management daemon.
