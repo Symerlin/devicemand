@@ -7,7 +7,7 @@ use std::os::raw::c_void;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use err::{err, wrap_result};
-use libc::{AF_NETLINK, MSG_DONTWAIT, NETLINK_KOBJECT_UEVENT, SOCK_CLOEXEC, SOCK_DGRAM};
+use libc::{AF_NETLINK, MSG_WAITFORONE, NETLINK_KOBJECT_UEVENT, SOCK_CLOEXEC, SOCK_DGRAM};
 
 use crate::{Error, must_get};
 use crate::devices::ScanUsbDevice;
@@ -34,7 +34,7 @@ pub fn Serve() -> Result<(), Error> {
     let mut buf = vec![0; 8192];
 
     loop {
-        if unsafe { libc::recv(fd, buf.as_mut_ptr() as *mut c_void, 8192, MSG_DONTWAIT) } < 0 {
+        if unsafe { libc::recv(fd, buf.as_mut_ptr() as *mut c_void, 8192, MSG_WAITFORONE) } < 0 {
             continue;
         }
 
