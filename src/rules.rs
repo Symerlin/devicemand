@@ -6,11 +6,8 @@ use std::{fs, io};
 use std::os::unix::fs as unix_fs;
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
-
 use crate::devices::UsbDevice;
 
-#[derive(Deserialize, Serialize)]
 pub struct UsbRule {
     pub VendorId: Option<String>,
     pub ProductId: Option<String>,
@@ -21,7 +18,7 @@ pub struct UsbRule {
 }
 
 impl UsbRule {
-    pub fn Match(&self, device: UsbDevice) -> io::Result<bool> {
+    pub fn Match(&self, device: &UsbDevice) -> io::Result<bool> {
         match &self.VendorId {
             Some(v) => {
                 if device.GetVendorId()?.as_str() != v.as_str() {
@@ -43,7 +40,7 @@ impl UsbRule {
         Ok(true)
     }
 
-    pub fn Apply(&self, device: UsbDevice) -> io::Result<()> {
+    pub fn Apply(&self, device: &UsbDevice) -> io::Result<()> {
         let path = Path::new(&device.DevicePath);
 
         fs::set_permissions(path, unix_fs::PermissionsExt::from_mode(self.Mode))?;

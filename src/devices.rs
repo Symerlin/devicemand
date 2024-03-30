@@ -3,8 +3,11 @@
 // that can be found in the LICENSE file and https://mozilla.org/MPL/2.0/.
 
 use std::{fs, io};
-use std::collections::HashMap;
-use std::path::Path;
+
+use err::wrap_result;
+
+use crate::errors::Error;
+use crate::keyvalue::ReadKeyValueMap;
 
 pub struct UsbDevice {
     pub Path: String,
@@ -34,18 +37,18 @@ impl UsbDevice {
     }
 }
 
-pub fn ScanUsbDevice() -> io::Result<Vec<UsbDevice>> {
+pub fn ScanUsbDevice() -> Result<Vec<UsbDevice>, Error> {
     let mut devices = vec![];
 
-    for path_ in fs::read_dir("/sys/bus/usb/devices/")? {
-        let name = path_?.file_name().into_string().unwrap();
+    for path_ in wrap_result!(Error::IoError,  fs::read_dir("/sys/bus/usb/devices/")) {
+        let name = wrap_result!(Error::IoError, path_).file_name().into_string().unwrap();
         if name.contains(':') || !name.contains('-') {
             continue;
         }
 
         let path = format!("/sys/bus/usb/devices/{}", name);
 
-        let uevent = ParseUevent(&path)?;
+        let uevent = wrap_result!(Error::IoError, ReadKeyValueMap(&format!("{}/uevent", path)));
 
         devices.push(UsbDevice {
             Path: path.clone(),
@@ -54,13 +57,4 @@ pub fn ScanUsbDevice() -> io::Result<Vec<UsbDevice>> {
     }
 
     Ok(devices)
-}
-
-pub fn ParseUevent(devicePath: &String) -> io::Result<HashMap<String, String>> {
-    let mut map = HashMap::new();
-    for line in fs::read_to_string(Path::new(&format!("{}/uevent", devicePath)))?.lines() {
-        let (key, val) = line.rsplit_once('=').unwrap();
-        map.insert(key.to_string(), val.to_string());
-    }
-    Ok(map)
 }

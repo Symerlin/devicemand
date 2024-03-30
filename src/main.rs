@@ -5,8 +5,17 @@
 #![allow(nonstandard_style)]
 #![allow(unused)]
 
+extern crate core;
+
+use crate::errors::Error;
+
 mod devices;
 mod devices_test;
 mod rules;
+mod uevent;
+mod keyvalue;
+mod errors;
 
-fn main() {}
+fn main() -> Result<(), Error> {
+    uevent::Serve()
+}
