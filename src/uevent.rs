@@ -15,14 +15,12 @@ use crate::errors::MissingField;
 use crate::keyvalue::ReadKeyValueMap;
 use crate::rules::UsbRule;
 
+macro_rules! log_println {
+    ($str:expr, $($arg:expr), *) => { println!(concat!("{}: ", $str), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(), $($arg,)*) };
+}
+
 pub fn Serve() -> Result<(), Error> {
-    let fd = unsafe {
-        libc::socket(
-            AF_NETLINK,
-            SOCK_DGRAM | SOCK_CLOEXEC,
-            NETLINK_KOBJECT_UEVENT,
-        )
-    };
+    let fd = unsafe { libc::socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, NETLINK_KOBJECT_UEVENT) };
     if fd < 0 {
         err!(Error::IoError, io::Error::last_os_error());
     }
@@ -32,13 +30,7 @@ pub fn Serve() -> Result<(), Error> {
     addr.nl_pid = process::id();
     addr.nl_groups = 1;
 
-    let res = unsafe {
-        libc::bind(
-            fd,
-            &addr as *const libc::sockaddr_nl as *const libc::sockaddr,
-            mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t,
-        )
-    };
+    let res = unsafe { libc::bind(fd, &addr as *const libc::sockaddr_nl as *const libc::sockaddr, mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t) };
     if res != 0 {
         err!(Error::IoError, io::Error::last_os_error());
     }
@@ -53,10 +45,10 @@ pub fn Serve() -> Result<(), Error> {
         fn act() -> Result<(), Error> {
             let devices = ScanUsbDevice()?;
 
-            for rule in ReadRules()? {
+            for rule in ReadUsbRules()? {
                 for device in &devices {
                     if wrap_result!(Error::IoError, rule.Match(&device)) {
-                        println!("Apply rule to {}", device.DevicePath);
+                        log_println!("Apply rule to {}", device.DevicePath);
                         wrap_result!(Error::IoError, rule.Apply(&device));
                     }
                 }
@@ -77,19 +69,10 @@ pub fn Serve() -> Result<(), Error> {
     }
 }
 
-pub fn ReadRules() -> Result<Vec<UsbRule>, Error> {
+pub fn ReadUsbRules() -> Result<Vec<UsbRule>, Error> {
     let mut rules = vec![];
-    for path in wrap_result!(Error::IoError, fs::read_dir("/etc/deviceman.d/usb/")) {
-        let map = wrap_result!(
-            Error::IoError,
-            ReadKeyValueMap(&format!(
-                "/etc/deviceman.d/usb/{}",
-                wrap_result!(Error::IoError, path)
-                    .file_name()
-                    .into_string()
-                    .unwrap()
-            ))
-        );
+    for path in wrap_result!(Error::IoError, fs::read_dir("/etc/deviceman/usb.conf.d/")) {
+        let map = wrap_result!(Error::IoError, ReadKeyValueMap(&format!("/etc/deviceman/usb.conf.d/{}", path.unwrap().file_name().into_string().unwrap())));
 
         rules.push(UsbRule {
             VendorId: map.get("vendor_id").cloned(),
