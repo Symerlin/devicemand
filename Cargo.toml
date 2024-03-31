@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-err = { git = "https://github.com/langvm/err-rs" }
+err-rs = { git = "https://github.com/langvm/err-rs" }
 libc = "0.2.153"

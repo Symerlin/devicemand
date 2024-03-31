@@ -4,7 +4,7 @@
 
 use std::{fs, io};
 
-use err::wrap_result;
+use err_rs::wrap_result;
 
 use crate::errors::Error;
 use crate::keyvalue::ReadKeyValueMap;
@@ -40,8 +40,11 @@ impl UsbDevice {
 pub fn ScanUsbDevice() -> Result<Vec<UsbDevice>, Error> {
     let mut devices = vec![];
 
-    for path_ in wrap_result!(Error::IoError,  fs::read_dir("/sys/bus/usb/devices/")) {
-        let name = wrap_result!(Error::IoError, path_).file_name().into_string().unwrap();
+    for path_ in wrap_result!(Error::IoError, fs::read_dir("/sys/bus/usb/devices/")) {
+        let name = wrap_result!(Error::IoError, path_)
+            .file_name()
+            .into_string()
+            .unwrap();
         if name.contains(':') || !name.contains('-') {
             continue;
         }

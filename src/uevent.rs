@@ -6,7 +6,7 @@ use std::{fs, io, mem, process};
 use std::os::raw::c_void;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use err::{err, wrap_result};
+use err_rs::{err, wrap_result};
 use libc::{AF_NETLINK, MSG_WAITFORONE, NETLINK_KOBJECT_UEVENT, SOCK_CLOEXEC, SOCK_DGRAM};
 
 use crate::{Error, must_get};
@@ -16,7 +16,13 @@ use crate::keyvalue::ReadKeyValueMap;
 use crate::rules::UsbRule;
 
 pub fn Serve() -> Result<(), Error> {
-    let fd = unsafe { libc::socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, NETLINK_KOBJECT_UEVENT) };
+    let fd = unsafe {
+        libc::socket(
+            AF_NETLINK,
+            SOCK_DGRAM | SOCK_CLOEXEC,
+            NETLINK_KOBJECT_UEVENT,
+        )
+    };
     if fd < 0 {
         err!(Error::IoError, io::Error::last_os_error());
     }
@@ -26,7 +32,13 @@ pub fn Serve() -> Result<(), Error> {
     addr.nl_pid = process::id();
     addr.nl_groups = 1;
 
-    let res = unsafe { libc::bind(fd, &addr as *const libc::sockaddr_nl as *const libc::sockaddr, mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t) };
+    let res = unsafe {
+        libc::bind(
+            fd,
+            &addr as *const libc::sockaddr_nl as *const libc::sockaddr,
+            mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t,
+        )
+    };
     if res != 0 {
         err!(Error::IoError, io::Error::last_os_error());
     }
@@ -55,7 +67,10 @@ pub fn Serve() -> Result<(), Error> {
         match act() {
             Ok(_) => {}
             Err(e) => {
-                let now = wrap_result!(Error::SystemTimeError, SystemTime::now().duration_since(UNIX_EPOCH));
+                let now = wrap_result!(
+                    Error::SystemTimeError,
+                    SystemTime::now().duration_since(UNIX_EPOCH)
+                );
                 println!("{}: {:?}", now.as_secs(), e);
             }
         }
@@ -65,7 +80,16 @@ pub fn Serve() -> Result<(), Error> {
 pub fn ReadRules() -> Result<Vec<UsbRule>, Error> {
     let mut rules = vec![];
     for path in wrap_result!(Error::IoError, fs::read_dir("/etc/deviceman.d/usb/")) {
-        let map = wrap_result!(Error::IoError, ReadKeyValueMap(&format!("/etc/deviceman.d/usb/{}", wrap_result!(Error::IoError, path).file_name().into_string().unwrap())));
+        let map = wrap_result!(
+            Error::IoError,
+            ReadKeyValueMap(&format!(
+                "/etc/deviceman.d/usb/{}",
+                wrap_result!(Error::IoError, path)
+                    .file_name()
+                    .into_string()
+                    .unwrap()
+            ))
+        );
 
         rules.push(UsbRule {
             VendorId: map.get("vendor_id").cloned(),
