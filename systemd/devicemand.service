@@ -1,0 +1,11 @@
+[Unit]
+Description=Rule-based Device Manager for Device Events
+After=network.target
+
+[Service]
+ExecStart=/sbin/devicemand
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=default.target

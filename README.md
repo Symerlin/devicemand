@@ -25,3 +25,17 @@ uid=1000
 gid=1000
 mode=0666
 ```
+
+## systemd
+
+This repo provides a systemd service unit file. Write it into ```/lib/systemd/system/devicemand.service``` and start it.
+
+```bash
+systemctl start devicemand
+```
+
+The output will be logged by systemd.
+
+```bash
+systemctl status devicemand
+```

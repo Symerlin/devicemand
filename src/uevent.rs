@@ -4,7 +4,6 @@
 
 use std::{fs, io, mem, process};
 use std::os::raw::c_void;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use err_rs::{err, wrap_result};
 use libc::{AF_NETLINK, MSG_WAITFORONE, NETLINK_KOBJECT_UEVENT, SOCK_CLOEXEC, SOCK_DGRAM};
@@ -14,10 +13,6 @@ use crate::devices::ScanUsbDevice;
 use crate::errors::MissingField;
 use crate::keyvalue::ReadKeyValueMap;
 use crate::rules::UsbRule;
-
-macro_rules! log_println {
-    ($str:expr, $($arg:expr), *) => { println!(concat!("{}: ", $str), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(), $($arg,)*) };
-}
 
 pub fn Serve() -> Result<(), Error> {
     let fd = unsafe { libc::socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, NETLINK_KOBJECT_UEVENT) };
@@ -42,13 +37,13 @@ pub fn Serve() -> Result<(), Error> {
             continue;
         }
 
-        fn act() -> Result<(), Error> {
+        fn applyUsbRules() -> Result<(), Error> {
             let devices = ScanUsbDevice()?;
 
             for rule in ReadUsbRules()? {
                 for device in &devices {
                     if wrap_result!(Error::IoError, rule.Match(&device)) {
-                        log_println!("Apply rule to {}", device.DevicePath);
+                        println!("Apply rule to {}", device.DevicePath);
                         wrap_result!(Error::IoError, rule.Apply(&device));
                     }
                 }
@@ -56,14 +51,10 @@ pub fn Serve() -> Result<(), Error> {
             Ok(())
         }
 
-        match act() {
+        match applyUsbRules() {
             Ok(_) => {}
             Err(e) => {
-                let now = wrap_result!(
-                    Error::SystemTimeError,
-                    SystemTime::now().duration_since(UNIX_EPOCH)
-                );
-                println!("{}: {:?}", now.as_secs(), e);
+                eprintln!("{:?}", e);
             }
         }
     }
